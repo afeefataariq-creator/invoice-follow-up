@@ -11,8 +11,21 @@ export default function Home() {
       </h1>
       <p className="mt-3 max-w-md text-zinc-600">
         AI-drafted, human-approved follow-ups for overdue invoices.
-        Currently under construction — Milestone 0: it&apos;s alive. 🎉
       </p>
+      <div className="mt-6 flex gap-3">
+        <a
+          href="/signup"
+          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white"
+        >
+          Sign up
+        </a>
+        <a
+          href="/login"
+          className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700"
+        >
+          Log in
+        </a>
+      </div>
     </main>
   );
 }
