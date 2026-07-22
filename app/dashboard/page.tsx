@@ -5,6 +5,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import LogoutButton from "@/components/LogoutButton";
+import ConnectStripeForm from "@/components/ConnectStripeForm";
+import SampleDataButton from "@/components/SampleDataButton";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -12,28 +14,62 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // If there's no logged-in user, send them to the login page instead
-  // of showing anything. This is the actual "wall" we built this
-  // milestone for.
   if (!user) {
     redirect("/login");
   }
 
+  const { data: connection } = await supabase
+    .from("stripe_connections")
+    .select("id, created_at")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const { count: invoiceCount } = await supabase
+    .from("invoices")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+
   return (
     <main className="min-h-screen bg-zinc-50 px-6 py-10">
-      <div className="mx-auto max-w-2xl">
+      <div className="mx-auto max-w-2xl space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold text-zinc-900">Dashboard</h1>
           <LogoutButton />
         </div>
-        <p className="mt-2 text-zinc-600">
+        <p className="text-zinc-600">
           Logged in as <span className="font-medium">{user.email}</span>
         </p>
-        <p className="mt-8 rounded-lg bg-white p-6 text-sm text-zinc-500 shadow-sm">
-          Your invoices will show up here soon — next milestone connects
-          Stripe.
-        </p>
+
+        {connection && (
+          <div className="rounded-lg bg-white p-6 shadow-sm">
+            <p className="text-sm font-medium text-green-700">
+              ✅ Stripe connected
+            </p>
+            <p className="mt-1 text-sm text-zinc-500">
+              Connected on{" "}
+              {new Date(connection.created_at).toLocaleDateString()}.
+            </p>
+          </div>
+        )}
+
+        {!connection && <ConnectStripeForm />}
+
+        {invoiceCount ? (
+          <div className="rounded-lg bg-white p-6 shadow-sm">
+            <p className="text-sm font-medium text-green-700">
+              ✅ {invoiceCount} invoice{invoiceCount === 1 ? "" : "s"} loaded
+            </p>
+            <p className="mt-1 text-sm text-zinc-500">
+              The full invoice list and overdue detection view is coming in
+              the next milestone.
+            </p>
+          </div>
+        ) : (
+          <SampleDataButton />
+        )}
       </div>
     </main>
   );
 }
+
+
