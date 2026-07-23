@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import LogoutButton from "@/components/LogoutButton";
 import ConnectStripeForm from "@/components/ConnectStripeForm";
 import SampleDataButton from "@/components/SampleDataButton";
+import InvoiceList from "@/components/InvoiceList";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -18,16 +19,12 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const { data: connection } = await supabase
-    .from("stripe_connections")
-    .select("id, created_at")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  const { count: invoiceCount } = await supabase
+  const { data: invoices } = await supabase
     .from("invoices")
-    .select("id", { count: "exact", head: true })
+    .select("id, client_name, client_email, amount_cents, currency, due_date, status, tone")
     .eq("user_id", user.id);
+
+  const hasInvoices = invoices && invoices.length > 0;
 
   return (
     <main className="min-h-screen bg-zinc-50 px-6 py-10">
@@ -40,36 +37,29 @@ export default async function DashboardPage() {
           Logged in as <span className="font-medium">{user.email}</span>
         </p>
 
-        {connection && (
-          <div className="rounded-lg bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-green-700">
-              ✅ Stripe connected
-            </p>
-            <p className="mt-1 text-sm text-zinc-500">
-              Connected on{" "}
-              {new Date(connection.created_at).toLocaleDateString()}.
-            </p>
-          </div>
-        )}
-
-        {!connection && <ConnectStripeForm />}
-
-        {invoiceCount ? (
-          <div className="rounded-lg bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-green-700">
-              ✅ {invoiceCount} invoice{invoiceCount === 1 ? "" : "s"} loaded
-            </p>
-            <p className="mt-1 text-sm text-zinc-500">
-              The full invoice list and overdue detection view is coming in
-              the next milestone.
-            </p>
-          </div>
+        {hasInvoices ? (
+          <>
+            <InvoiceList invoices={invoices} />
+            <details className="rounded-lg bg-white p-4 text-sm text-zinc-500 shadow-sm">
+              <summary className="cursor-pointer font-medium text-zinc-700">
+                Connect a different Stripe account or reload sample data
+              </summary>
+              <div className="mt-4 space-y-4">
+                <ConnectStripeForm />
+                <SampleDataButton />
+              </div>
+            </details>
+          </>
         ) : (
-          <SampleDataButton />
+          <>
+            <ConnectStripeForm />
+            <SampleDataButton />
+          </>
         )}
       </div>
     </main>
   );
 }
+
 
 
